@@ -1,13 +1,11 @@
 import Foundation
-import SwiftData
 
-@Model
-final class CountdownEvent {
+struct CountdownEvent: Identifiable, Codable, Hashable {
     var id: UUID
     var name: String
     var targetDate: Date
     var isLunar: Bool
-    var isCountdown: Bool // true=倒数日, false=纪念日
+    var isCountdown: Bool
     var category: String
     var themeName: String
     var reminderDaysBefore: Int
@@ -56,4 +54,61 @@ final class CountdownEvent {
     }
 
     static let categories = ["生日", "纪念日", "节日", "考试", "工作", "其他"]
+}
+
+// MARK: - Event Store (UserDefaults-based)
+class EventStore: ObservableObject {
+    @Published var events: [CountdownEvent] = []
+
+    private let key = "countdown_events"
+
+    init() {
+        load()
+    }
+
+    func load() {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let decoded = try? JSONDecoder().decode([CountdownEvent].self, from: data) else {
+            events = []
+            return
+        }
+        events = decoded
+    }
+
+    func save() {
+        if let data = try? JSONEncoder().encode(events) {
+            UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+
+    func add(_ event: CountdownEvent) {
+        events.append(event)
+        save()
+    }
+
+    func delete(_ event: CountdownEvent) {
+        events.removeAll { $0.id == event.id }
+        save()
+    }
+
+    func update(_ event: CountdownEvent) {
+        if let index = events.firstIndex(where: { $0.id == event.id }) {
+            events[index] = event
+            save()
+        }
+    }
+
+    func togglePin(_ event: CountdownEvent) {
+        if let index = events.firstIndex(where: { $0.id == event.id }) {
+            events[index].isPinned.toggle()
+            save()
+        }
+    }
+
+    var sortedEvents: [CountdownEvent] {
+        events.sorted { a, b in
+            if a.isPinned != b.isPinned { return a.isPinned }
+            return a.targetDate < b.targetDate
+        }
+    }
 }

@@ -1,1 +1,3 @@
 generate_pbxproj.py
+*.ipa
+*.zip

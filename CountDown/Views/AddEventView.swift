@@ -1,8 +1,7 @@
 import SwiftUI
-import SwiftData
 
 struct AddEventView: View {
-    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var eventStore: EventStore
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
@@ -13,9 +12,7 @@ struct AddEventView: View {
     @State private var selectedTheme = "starSea"
     @State private var reminderDays = 0
     @State private var repeatYearly = false
-    @State private var showDatePicker = false
 
-    // Lunar date picker states
     @State private var lunarYear = 2025
     @State private var lunarMonth = 1
     @State private var lunarDay = 1
@@ -28,7 +25,6 @@ struct AddEventView: View {
     var body: some View {
         NavigationStack {
             Form {
-                // Basic info
                 Section("基本信息") {
                     TextField("事件名称（如：生日、纪念日）", text: $name)
                         .font(.body)
@@ -46,9 +42,7 @@ struct AddEventView: View {
                     }
                 }
 
-                // Date setting - KEY SECTION
                 Section {
-                    // Calendar type toggle
                     Toggle(isOn: $isLunar) {
                         HStack {
                             Image(systemName: "moon.fill")
@@ -58,14 +52,12 @@ struct AddEventView: View {
                     }
                     .onChange(of: isLunar) { newValue in
                         if newValue {
-                            // Convert current Gregorian date to Lunar components
                             let comps = LunarCalendar.lunarComponents(from: selectedDate)
                             lunarYear = comps.year
                             lunarMonth = comps.month
                             lunarDay = comps.day
                             isLeapMonth = comps.isLeapMonth
                         } else {
-                            // Convert Lunar to Gregorian
                             if let gregorianDate = LunarCalendar.gregorianFromLunar(
                                 year: lunarYear, month: lunarMonth, day: lunarDay,
                                 isLeapMonth: isLeapMonth) {
@@ -75,16 +67,13 @@ struct AddEventView: View {
                     }
 
                     if isLunar {
-                        // Lunar date picker
                         lunarDatePicker
                     } else {
-                        // Gregorian date picker
                         DatePicker("选择日期", selection: $selectedDate,
                                    displayedComponents: .date)
                             .environment(\.locale, Locale(identifier: "zh_CN"))
                     }
 
-                    // Date preview
                     HStack {
                         Text("公历")
                             .font(.caption)
@@ -111,7 +100,6 @@ struct AddEventView: View {
                          "选择一个过去的日期，系统会计算已过天数")
                 }
 
-                // Theme
                 Section("卡片主题") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
                         ForEach(ThemeManager.themes) { theme in
@@ -126,7 +114,6 @@ struct AddEventView: View {
                     .padding(.vertical, 4)
                 }
 
-                // Reminder
                 Section("提醒设置") {
                     Toggle(isOn: $repeatYearly) {
                         Label("每年重复", systemImage: "repeat")
@@ -134,7 +121,6 @@ struct AddEventView: View {
 
                     Picker("提前提醒", selection: $reminderDays) {
                         Text("不提醒").tag(0)
-                        Text("当天").tag(0) // Will handle differently
                         Text("提前1天").tag(1)
                         Text("提前3天").tag(3)
                         Text("提前7天").tag(7)
@@ -143,7 +129,6 @@ struct AddEventView: View {
                     }
                 }
 
-                // Quick templates
                 Section("快捷模板") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 10) {
                         TemplateButton(title: "生日", icon: "🎂", color: .pink) {
@@ -201,7 +186,6 @@ struct AddEventView: View {
     private var lunarDatePicker: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                // Year
                 VStack(alignment: .leading) {
                     Text("年").font(.caption).foregroundStyle(.secondary)
                     Picker("年", selection: $lunarYear) {
@@ -214,7 +198,6 @@ struct AddEventView: View {
                     .clipped()
                 }
 
-                // Month
                 VStack(alignment: .leading) {
                     Text("月").font(.caption).foregroundStyle(.secondary)
                     Picker("月", selection: $lunarMonth) {
@@ -227,7 +210,6 @@ struct AddEventView: View {
                     .clipped()
                 }
 
-                // Day
                 VStack(alignment: .leading) {
                     Text("日").font(.caption).foregroundStyle(.secondary)
                     Picker("日", selection: $lunarDay) {
@@ -246,7 +228,6 @@ struct AddEventView: View {
         }
     }
 
-    // MARK: - Effective Date
     private var effectiveDate: Date {
         if isLunar {
             return LunarCalendar.gregorianFromLunar(
@@ -257,7 +238,6 @@ struct AddEventView: View {
         return selectedDate
     }
 
-    // MARK: - Save
     private func saveEvent() {
         let dateToSave = effectiveDate
         let event = CountdownEvent(
@@ -270,7 +250,7 @@ struct AddEventView: View {
             reminderDaysBefore: reminderDays,
             repeatYearly: repeatYearly
         )
-        modelContext.insert(event)
+        eventStore.add(event)
         NotificationManager.scheduleNotification(for: event)
         dismiss()
     }

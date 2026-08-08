@@ -1,11 +1,7 @@
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: [SortDescriptor(\CountdownEvent.isPinned, order: .reverse),
-                  SortDescriptor(\CountdownEvent.targetDate)])
-    private var events: [CountdownEvent]
+    @EnvironmentObject private var eventStore: EventStore
 
     @State private var showingAddSheet = false
     @State private var searchText = ""
@@ -13,7 +9,7 @@ struct ContentView: View {
     @State private var colorScheme: ColorScheme = .light
 
     var filteredEvents: [CountdownEvent] {
-        events.filter { event in
+        eventStore.sortedEvents.filter { event in
             (searchText.isEmpty || event.name.localizedCaseInsensitiveContains(searchText)) &&
             (selectedCategory == nil || event.category == selectedCategory)
         }
@@ -22,13 +18,11 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background
                 LinearGradient(colors: [Color(.systemBackground), Color(.systemGroupedBackground)],
                                startPoint: .top, endPoint: .bottom)
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Category filter
                     categoryFilterBar
 
                     if filteredEvents.isEmpty {
@@ -158,7 +152,6 @@ struct EventCardView: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Background gradient
             RoundedRectangle(cornerRadius: 20)
                 .fill(
                     LinearGradient(colors: gradientColors,
@@ -167,11 +160,9 @@ struct EventCardView: View {
                 )
                 .frame(height: 160)
 
-            // Decorative pattern overlay
             decorativePattern
                 .clipShape(RoundedRectangle(cornerRadius: 20))
 
-            // Frosted glass info layer
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(event.category)
@@ -219,7 +210,6 @@ struct EventCardView: View {
                         Text("\(abs(event.displayDays))")
                             .font(.system(size: 42, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
-                            .contentTransition(.numericText())
 
                         Text(event.isCountdown ? (event.daysRemaining >= 0 ? "天后" : "已过") : "天前")
                             .font(.caption)
@@ -242,20 +232,17 @@ struct EventCardView: View {
         }
     }
 
-    // Decorative pattern overlay
     @ViewBuilder
     private var decorativePattern: some View {
         GeometryReader { geo in
             ZStack {
-                // Soft circles
-                ForEach(0..<5, id: \.self) { i in
+                ForEach(0..<5, id: \.self) { _ in
                     Circle()
                         .fill(.white.opacity(0.05))
-                        .frame(width: CGFloat.random(in: 40...100))
-                        .position(x: CGFloat.random(in: 0...geo.size.width),
-                                  y: CGFloat.random(in: 0...geo.size.height))
+                        .frame(width: 60, height: 60)
+                        .position(x: CGFloat.random(in: 0...max(1, geo.size.width)),
+                                  y: CGFloat.random(in: 0...max(1, geo.size.height)))
                 }
-                // Diagonal lines
                 ForEach(0..<3, id: \.self) { i in
                     Rectangle()
                         .fill(.white.opacity(0.03))

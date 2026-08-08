@@ -1,15 +1,13 @@
 import SwiftUI
-import SwiftData
 
 struct EventDetailView: View {
-    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var eventStore: EventStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
     let event: CountdownEvent
 
     @State private var showDeleteAlert = false
-    @State private var showEditSheet = false
     @State private var animateNumber = false
 
     private var theme: AppTheme {
@@ -22,23 +20,16 @@ struct EventDetailView: View {
 
     var body: some View {
         ZStack {
-            // Full background gradient
             LinearGradient(colors: gradientColors,
                            startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
 
-            // Decorative elements
             decorativeBackground
 
             ScrollView {
                 VStack(spacing: 32) {
-                    // Main countdown display
                     mainCountdownView
-
-                    // Info cards
                     infoCardsSection
-
-                    // Action buttons
                     actionButtons
                 }
                 .padding(.top, 40)
@@ -51,8 +42,7 @@ struct EventDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {
-                        event.isPinned.toggle()
-                        try? modelContext.save()
+                        eventStore.togglePin(event)
                     } label: {
                         Label(event.isPinned ? "取消置顶" : "置顶",
                               systemImage: event.isPinned ? "pin.slash" : "pin")
@@ -73,7 +63,7 @@ struct EventDetailView: View {
             Button("取消", role: .cancel) {}
             Button("删除", role: .destructive) {
                 NotificationManager.cancelNotification(for: event)
-                modelContext.delete(event)
+                eventStore.delete(event)
                 dismiss()
             }
         } message: {
@@ -89,7 +79,6 @@ struct EventDetailView: View {
     // MARK: - Main Countdown
     private var mainCountdownView: some View {
         VStack(spacing: 16) {
-            // Category badge
             Text(event.category)
                 .font(.caption)
                 .fontWeight(.medium)
@@ -98,15 +87,12 @@ struct EventDetailView: View {
                 .background(.ultraThinMaterial)
                 .clipShape(Capsule())
 
-            // Event name
             Text(event.name)
                 .font(.system(size: 32, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
 
-            // Big number
             ZStack {
-                // Glow effect
                 Text("\(abs(event.displayDays))")
                     .font(.system(size: 96, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white.opacity(0.15))
@@ -116,7 +102,6 @@ struct EventDetailView: View {
                 Text("\(abs(event.displayDays))")
                     .font(.system(size: 96, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
-                    .contentTransition(.numericText())
                     .scaleEffect(animateNumber ? 1 : 0.5)
             }
 
@@ -127,7 +112,6 @@ struct EventDetailView: View {
                 .fontWeight(.medium)
                 .foregroundStyle(.white.opacity(0.8))
 
-            // Calendar type badge
             HStack(spacing: 6) {
                 Image(systemName: event.isLunar ? "moon.fill" : "sun.max.fill")
                     .font(.caption)
@@ -144,7 +128,6 @@ struct EventDetailView: View {
     // MARK: - Info Cards
     private var infoCardsSection: some View {
         VStack(spacing: 12) {
-            // Gregorian date card
             InfoCard(
                 icon: "calendar",
                 title: "公历日期",
@@ -152,7 +135,6 @@ struct EventDetailView: View {
                 subtitle: LunarCalendar.monthDay(from: event.targetDate)
             )
 
-            // Lunar date card
             InfoCard(
                 icon: "moon.stars",
                 title: "农历日期",
@@ -163,7 +145,6 @@ struct EventDetailView: View {
                 }()
             )
 
-            // Status card
             InfoCard(
                 icon: event.isCountdown ? "clock.arrow.circlepath" : "clock.badge.checkmark",
                 title: event.isCountdown ? "倒数日" : "纪念日",
@@ -180,18 +161,6 @@ struct EventDetailView: View {
     private var actionButtons: some View {
         HStack(spacing: 16) {
             Button {
-                showEditSheet = true
-            } label: {
-                Label("编辑", systemImage: "pencil")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            .foregroundStyle(.white)
-
-            Button {
                 shareEvent()
             } label: {
                 Label("分享", systemImage: "square.and.arrow.up")
@@ -206,24 +175,21 @@ struct EventDetailView: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Decorative Background
     @ViewBuilder
     private var decorativeBackground: some View {
         GeometryReader { geo in
-            // Soft decorative circles
-            ForEach(0..<6, id: \.self) { i in
+            ForEach(0..<6, id: \.self) { _ in
                 Circle()
                     .fill(.white.opacity(0.03))
-                    .frame(width: CGFloat(60 + i * 30))
+                    .frame(width: 80, height: 80)
                     .position(
-                        x: CGFloat.random(in: 50...geo.size.width - 50),
-                        y: CGFloat.random(in: 100...geo.size.height - 100)
+                        x: CGFloat.random(in: 50...max(51, geo.size.width - 50)),
+                        y: CGFloat.random(in: 100...max(101, geo.size.height - 100))
                     )
             }
         }
     }
 
-    // MARK: - Share
     private func shareEvent() {
         let text = event.isCountdown ?
             "距离「\(event.name)」还有 \(event.daysRemaining) 天！" :
