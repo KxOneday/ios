@@ -81,7 +81,7 @@
 				E76A43608BA74C218457F244 /* CountDownApp.swift */,
 				43DC1DDAFD894421B0F88822 /* Views */,
 				0B41B732ED2342BB993AF675 /* Models */,
-				13157319A2524B739180E6B7 /* Assets.xcassets */,
+				7C2BF1E554F548BB8BAADBFA /* Assets.xcassets */,
 				1AB991E45E924C70A7FF0A8C /* Info.plist */,
 			);
 			path = CountDown;
@@ -108,30 +108,14 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		13157319A2524B739180E6B7 /* Assets.xcassets */ = {
-			isa = PBXGroup;
-			children = (
-				7C2BF1E554F548BB8BAADBFA /* Assets.xcassets */,
-			);
-			path = Assets.xcassets;
-			sourceTree = "<group>";
-		};
 		D11859ECE55041A39DF14BA7 /* CountDownWidget */ = {
 			isa = PBXGroup;
 			children = (
 				BE5A673B51B941EB91BD8057 /* CountDownWidget.swift */,
-				5E78C88D324B49CAB464B3A0 /* Assets.xcassets */,
+				1374F1E1F2B34616853A4DE4 /* Assets.xcassets */,
 				6B69C5C37BE14A689AEBDFDF /* Info.plist */,
 			);
 			path = CountDownWidget;
-			sourceTree = "<group>";
-		};
-		5E78C88D324B49CAB464B3A0 /* Assets.xcassets */ = {
-			isa = PBXGroup;
-			children = (
-				1374F1E1F2B34616853A4DE4 /* Assets.xcassets */,
-			);
-			path = Assets.xcassets;
 			sourceTree = "<group>";
 		};
 		833FEEBDC8D6429FBA8D6863 /* Frameworks */ = {
